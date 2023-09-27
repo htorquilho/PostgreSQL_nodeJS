@@ -1,4 +1,4 @@
-BANCOS DE DADOS SQL NO NODEJS
+# BANCOS DE DADOS SQL NO NODEJS
 
 
 mapa mental da aula:
@@ -7,7 +7,7 @@ mapa mental da aula:
 
 
 
-CRIANDO E REMOVENDO UM BANCO DE DADOS
+# CRIANDO E REMOVENDO UM BANCO DE DADOS
 
 
 Para criar um banco de dados:
@@ -35,8 +35,7 @@ Para apagar o banco de dados criado:
 
 
 
-
-TIPOS DE DADOS
+# TIPOS DE DADOS
 
 
 Documentação do PostgreSQL com os tipos de dados:
@@ -45,7 +44,7 @@ Documentação do PostgreSQL com os tipos de dados:
 
 
 
-CRIANDO E REMOVENDO UMA TABELA
+# CRIANDO E REMOVENDO UMA TABELA
 
 
 Modelo do comando para criar uma tabela:
@@ -143,7 +142,7 @@ Leituras extras:
 
 
 
-ALTERANDO UMA TABELA
+# ALTERANDO UMA TABELA
 
 
 Para criar uma tabela:
@@ -219,7 +218,7 @@ Leitura recomendada:
 
 
 
-INSERINDO E CONSULTANDO LINHAS NA TABELA
+# INSERINDO E CONSULTANDO LINHAS NA TABELA
 
 
 Para inserir uma nova linha na tabela:
@@ -295,7 +294,7 @@ Leituras recomendadas:
 
 
 
-CHAVE PRIMÁRIA
+# CHAVE PRIMÁRIA
 
  
 - A chave primária, ou Primary Key (PK) é o identificador único de um registro na tabela. Pode ser constituída de uma coluna (chave simples) ou pela combinação de dois ou mais colunas (chave composta), de tal maneira que não existam dois registros com o mesmo valor de chave primária.
@@ -369,7 +368,7 @@ Para pegar os dados apenas de um Planeta usando o ID:
 
 
 
-ATUALIZANDO E REMOVENDO LINHAS
+# ATUALIZANDO E REMOVENDO LINHAS
 
 
 Antes de atualizarmos uma linha na tabela, vamos resgatar todos os valores para vermos os IDs (que vão nos auxiliar na hora de selecionar a linha para atualizar):
@@ -416,4 +415,115 @@ Leituras recomendadas:
 - https://www.postgresqltutorial.com/postgresql-delete
 
 
-Exercício: criando uma tabela e consultando valores.
+
+# EXERCÍCIO: (RESOLUÇÃO)
+
+
+Para criar a tabela:
+
+
+    CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR (50) NOT NULL,
+        profession VARCHAR (50) NOT NULL,
+        birthday DATE NOT NULL
+    );
+
+
+Para inserir os valores:
+
+
+- INSERT INTO users (name, profession, birthday)
+    VALUES ('João', 'Programador', '1991-11-20');
+
+- INSERT INTO users (name, profession, birthday)
+    VALUES ('Marta', 'Astronauta', '1987-11-20');
+
+
+Para listar todas as linhas:
+
+
+- SELECT * FROM users;
+
+
+Para incluir a coluna 'vegan':
+
+
+- ALTER TABLE users ADD COLUMN vegan boolean;
+
+
+Para atualizar as linhas:
+
+
+- UPDATE users SET vegan = true WHERE id = 1;
+- UPDATE users SET vegan = false WHERE id = 2;
+
+
+Para apaguar todas as linhas:
+
+
+- DELETE FROM users;
+
+
+Para apagar a tabela:
+
+
+- DROP TABLE users;
+
+
+
+# ASSOCIAÇÃO DE TABELAS
+
+
+- Existem alguns tipos de associações entre tabelas que indicam que elas podem utilizar dados de outras. 
+
+- Ex: Um astronauta tem várias naves, e para identificarmos de qual astronauta é aquela nave, usamos uma foreign key(chave estrangeira) e fazemos essa conexão!
+
+
+Primeiro vamos criar um banco de dados dentro do postgres: 
+    
+    
+- $ CREATE DATABASE foreignkey
+    
+
+Vamos nos conectar a esse banco de dados para criarmos nossas tabelas:
+    
+    
+- $ \c foreignkey
+    
+
+Iniciamos criando a tabela “astronauta”: 
+    
+    
+    $ CREATE TABLE astronauta(
+        id SERIAL PRIMARY KEY NOT NULL,
+        nome VARCHAR(50) NOT NULL,
+        idade INT NOT NULL	
+    );
+
+    
+Vamos agora criar a tabela “naves”, e colocar a foreignkey, para criar o primeiro relacionamento:
+    
+    
+    $ CREATE TABLE nave(
+        id SERIAL PRIMARY KEY NOT NULL,
+        nome VARCHAR(50) NOT NULL,
+        capacidade INT NOT NULL, 
+        astronautaId INT,
+        CONSTRAINT fkAstronauta FOREIGN KEY(astronautaId) REFERENCES astronauta(id)
+    );
+
+    
+Agora vamos em “astronauta”, inserir um registro com nome e ID:
+    
+
+- $ INSERT INTO astronauta(nome, idade) VALUES (Armstrong, 44)
+    
+
+1Dentro da nave, vamos inserir o id do astronauta, para que tenhamos a conexão:
+    
+    
+- $ INSERT INTO nave(nome, capacidade, astronautaid) VALUES (Apollo11, 6, 1)
+    
+
+Agora que temos a associação entre tabelas, você não pode criar primeiro a nave, por que o valor id do astronauta não permite ser nulo, então sempre pé obrigatório ter um astronauta dono daquela nave.
