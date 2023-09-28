@@ -527,3 +527,223 @@ Agora vamos em “astronauta”, inserir um registro com nome e ID:
     
 
 Agora que temos a associação entre tabelas, você não pode criar primeiro a nave, por que o valor id do astronauta não permite ser nulo, então sempre pé obrigatório ter um astronauta dono daquela nave.
+
+
+
+# INSTALANDO O SEQUELIZE E SE CONECTANDO AO BANCO DE DADOS
+
+
+Abrir o terminal do vs code e dar um comando de init:
+    
+    
+- $ npm init -y
+
+    
+Instalar as dependências que iremos precisar (sequelize e banco de dados) Estamos instalando o express para usar mais na frente.
+    
+
+- $ npm install sequelize pg pg-hstore express
+
+    
+Agora iremos fazer a instalação do sequelize-cli, que fará uma organização básica:
+    
+
+- $ sudo npm install -g sequelize-cli
+    
+- $ sudo npm install sequelize-cli -D
+
+    
+Agora iremos dar início as pastas do nosso projeto.
+    
+
+- $ sequelize-cli init
+
+    
+Agora vamos na pasta config, iremos excluir o arquivo dentro dela e criar um novo arquivo, com o mesmo nome só que JS “config.js” e vamos inserir o código:
+    
+    
+    module.exports = {
+        dialect: "postgres",
+        host: "localhost",
+        username: "postgres",
+        password: "123456",
+        database: "curso_sequelize",
+        define: {
+            timestamps: true,
+        },
+    };
+
+    
+Agora iremos criar o nosso DB com um comando vindo do cli também. Você entra no terminal:
+
+
+- $ sequelize db:create
+
+
+
+# CRIANDO SEU PRIMEIRO MIGRATE
+
+
+Vamos iniciar a criação da migrate, que será por onde criaremos nossas tabelas. Vamos começar com um comando no terminal:
+    
+    
+    
+- $ sequelize migration:create --name=planets
+
+    
+Ele cria um up e um down já com um exemplo aqui em comentário.
+
+Up, serve para fazer fazer alguma ação, nesse caso criar tabelas, o down para você desfazer comentários, por isso eles precisam ser alterados juntos.
+
+
+Vamos primeiro alterar o nome da tabela, que está entre “” de users para planets, depois vamos adicionar mais configurações dentro dos {} onde está inicialmente o id.
+        
+
+    up: async (queryInterface, Sequelize) => {
+        await queryInterface.createTable("planets", { id: Sequelize.INTEGER });
+    },
+    
+    down: async (queryInterface, Sequelize) => {
+        await queryInterface.dropTable("planets");
+    },
+    
+
+Vamos agora adicionar informações para a nossa tabela, já temos o ID, mas vamos adicionar informações nesse id e também outras informações que queremos ter na tabela.
+    
+    
+    "use strict";
+    
+    module.exports = {
+      up: async (queryInterface, Sequelize) => {
+        await queryInterface.createTable("planets", {
+          id: {
+            type: Sequelize.INTEGER,
+            autoIncrement: true,
+            allowNull: false,
+            primaryKey: true,
+          },
+          name: {
+            type: Sequelize.STRING,
+            allowNull: false,
+          },
+          position: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+          },
+          createdAt: {
+            type: Sequelize.DATE,
+          },
+          updatedAt: {
+            type: Sequelize.DATE,
+          },
+        });
+      },
+    
+      down: async (queryInterface, Sequelize) => {
+        await queryInterface.dropTable("planets");
+      },
+    };
+    
+
+Agora, iremos dar um comando de terminal para fazer a criação do nosso migrate:
+
+
+- $ sequelize db:migrate
+
+
+E agora você pode verificar no terminal se foi criado com sucesso. Pode também ir ver através do terminal a criação dele, mas caso queira, temos também alternativas visuais, uma delas é o pgAdmin, que você pode baixar e configurar por esse link: https://www.pgadmin.org/
+
+Você vendo através do pgadmin, pode verificar que tem duas tabelas, uma que você criou e outra que se chama SequelizeMeta. Nela estarão os comandos que você deu através do “db:migrate”. Isso serve para controle e também para o comando para desfazer, que caso você queira testar agora, basta digitar
+    
+    
+- $ sequelize db:migrate:undo
+
+    
+E agora a sua tabela sumiu, mas dando “db:migrate” ela vai voltar ao normal. Isso é útil caso você tenha colocado um item errado. Mas não pode fazer isso depois que já foi para produção.
+
+
+
+# INSERINDO VALORES VIA SEQUELIZE
+
+
+Vamos inserir valores via sequelize e também vamos fazer a leitura desses valores inseridos.
+
+Vamos criar dentro da pasta config um arquivo chamado sequelize.js, ele terá as configurações que iremos usar no topo dos nossos models:
+    
+    
+    const Sequelize = require("sequelize");
+    const database = require("./config");
+    
+    const sequelize = new Sequelize(database);
+    
+    module.exports = sequelize;
+    
+    
+Vamos criar um arquivo chamado de “Planet.js” dentro de models e também vamos criar um arquivo chamado de “index.js” na raiz do projeto. Primeiro vamos fazer a config de Planet.js:
+    
+    
+    const { DataTypes } = require("sequelize");
+    const sequelize = require("../config/sequelize");
+    
+    const Planet = sequelize.define("planets", {
+      name: DataTypes.STRING,
+      position: DataTypes.INTEGER,
+    });
+    
+    module.exports = Planet
+
+    
+Agora iremos fazer as configurações dentro de “index.js”:
+    
+    
+    (async () => {
+      const Planet = require("./models/Planet");
+    
+      const newPlanet = await Planet.create({
+        name: "Terra",
+        position: 3,
+      });
+      console.log(newPlanet);
+    })();
+
+    
+Agora, rodando um comando no terminal, teremos a confirmação no próprio terminal se está correto ou não e se foi criado ou não!
+    
+    
+- $ node index
+
+    
+
+# CONSULTANDO VALORES VIA SEQUELIZE
+
+
+Vamos agora fazer dentro do próprio index um novo comando único para visualização dos nossos dados, aqui mesmo no console.
+    
+
+    const seePlanets = await Planet.findAll();
+    
+    console.log(seePlanets);
+
+    
+2Caso você queira pegar um planeta específico, podemos usar também um outro método para achar findbyPk(primary key) E nesse caso vai retornar apenas o planeta com ID = 1
+    
+    
+    const seePlanets = await Planet.findByPk(1);
+    
+      console.log(seePlanets);
+
+    
+Podemos também ter um método que acha planetas através do seu nome, para pegarmos outras informações dele. Digamos que você não sabe o ID dele, então você pode recorrer ao nome, então você vai usar um novo estilo de método
+    
+    
+    const seePlanets = await Planet.findAll({
+        where: {
+          name: "Terra",
+        },
+      });
+
+    
+Com isso, já temos os métodos de criar e de ler.
+
+
+# ATUALIZANDO VALORES VIA SEQUELIZE
