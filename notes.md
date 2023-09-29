@@ -747,3 +747,360 @@ Com isso, já temos os métodos de criar e de ler.
 
 
 # ATUALIZANDO VALORES VIA SEQUELIZE
+
+
+Vamos fazer aqui mais um método do CRUD, que é o de Update, nesse caso, iremos criar um método para atualizar valores
+
+Iremos aqui começar com a criação desse método na pasta index.js. Iremos copiar o método que criamos para alterar em cima disso.
+    
+    
+    const updatePlanets = await Planet.findByPk(1);
+      updatePlanets.name = "Terra616";
+    
+      await updatePlanets.save();
+      console.log(updatePlanets);
+
+    
+Fazendo isso, conseguimos alterar o nome do planeta com ID 1.
+
+
+
+# REMOVENDO DADOS VIA SEQUELIZE
+
+
+Agora iremos fazer o D do CRUD, o nosso delete, iremos também pegar um pouco do método de Read, para acharmos o que queremos deletar.
+
+Iremos copiar o nosso método Read de novo, para reaproveitar ele, mudando os nomes e colocando apenas algo básico no final
+    
+    
+    const deletePlanets = await Planet.findByPk(1);
+    console.log(deletePlanets);
+    
+    await deletePlanets.destroy();
+
+    
+Recomendo sempre que você tenha muito cuidado ao deletar, sempre preste atenção se você está deletando o correto, depois disso, basta colocar o “node index” que vai ser deletado aquela linha.
+
+Agora, você viu o método CRUD inteiro. E caso queira, pode também fazer outros métodos de busca pelo que você quer que deixa até mais seguro (com o where buscando pelo name).
+
+
+
+# TRANSFORMANDO EM UMA API
+
+
+Para fazermos requisições, vamos transformar nosso projeto em uma API, faremos via postman.
+
+Vamos criar uma pasta nova chamada “src” e dentro dela, colocaremos o nosso arquivo index.js e também criaremos um arquivo chamado routes.js.
+
+Em seguida, vamos criar uma pasta chamada Controllers, e dentro dela, um arquivo chamado “PlanetController.js”, onde colocaremos os nossos métodos CRUD.
+
+Vamos fazer a configuração de routes.js: nele teremos algumas instruções de por onde acessaremos as rotas de CRUD:
+    
+    
+    const express = require("express");
+    const routes = express.Router();
+    
+    const PlanetController = require("../Controllers/PlanetController");
+    
+    // Rotas de Planets
+    routes.post("/planets", PlanetController.store);
+    
+    module.exports = routes;
+
+    
+Vamos configurar também o arquivo “index.js” que terá algumas informações novas, já que iremos separar os métodos dentro do controller.
+    
+    
+    const express = require("express");
+    const routes = require("./routes");
+    
+    const app = express();
+    
+    app.use(express.json());
+    app.use(routes);
+    
+    app.listen(3000);
+    
+
+Temos o nosso arquivo de rotas criado, então vamos partir para Controller, onde teremos os nossos métodos. O primeiro será POST:
+    
+    
+    const Planet = require("../models/Planet");
+    
+    module.exports = {
+      async store(req, res) {
+        const { name, position } = req.body;
+    
+        const planet = await Planet.create({ name, position });
+    
+        return res.json(planet);
+      },
+    };
+
+    
+Vamos instalar o nodemon, pois é através dele que vamos realizar as requisições. Utilize o comando: npm install nodemon --save-dev. Em seguida, vamos subir o nosso server utilizando o comando “npx nodemon src/index.js”. No postman, criamos uma pasta chamada API e dentro dela, outra pasta chamada planet, onde faremos uma request chamada de POST, colocando o link: http://localhost:3000/planets
+
+Em seguida, você vai em body > raw  e escolha a opção do tipo de arquivo de Text para JSON, para criar um arquivo JSON no body com as informações que precisam ser passadas.
+
+
+    {
+    "name": "Terra",
+    "position": 3
+    }
+
+
+Agora iremos criar um método GET, que terá a busca de todos os planetas. No postman, dentro da pasta, inserimos uma request GET, que terá o link “http://localhost:3000/planets”.
+
+Em routes, iremos adicionar um método GET com o nome planets.
+
+
+routes.get("/planets", PlanetController.index);
+
+
+Agora vamos criar o método findAll em controller,  para buscar todos os planetas.
+    
+    
+    	async index(req, res) {
+        const planets = await Planet.findAll();
+    
+        return res.json(planets);
+      },
+    
+
+Indo no método GET, criado no postman e clicando em “SEND”, teremos exatamente o retorno do que queremos, todos os planetas que fizemos até agora.
+
+Vamos fazer um update de acordo com o ID, criando primeiro a rota, depois o controller.
+    
+    
+    routes.put("/planets/:id", PlanetController.put);
+    
+
+Agora vamos fazer com que o “:id” ache exatamente o planeta que queremos, e com isso, faremos com que seja atualizado apenas o valor específico naquele id, para o Controller.
+    
+    
+    async put(req, res) {
+        const { name, size, position } = req.body;
+        await Planet.update(
+          { name, size, position },
+          {
+            where: {
+              id: req.params.id,
+            },
+          }
+        );
+        return res.send("Planet update with sucess");
+      },
+    
+
+Iremos excluir pelo id também, de uma forma parecida com a que fizemos com o update! Começando com as rotas!
+    
+    
+    routes.delete("/planets/:id", PlanetController.delete);
+    
+
+E agora vamos alterar o controller, fazendo algo parecido com o que fizemos no update!
+    
+    
+    async delete(req, res) {
+        await Planet.destroy({
+          where: {
+            id: req.params.id,
+          },
+        });
+    
+        res.send("Sucess! Planet exclude.");
+      },
+    
+
+Vamos criar um request dentro de planet, como fizemos com os outros e colocar o http que inserimos na rota!
+    
+    
+    http://localhost:3000/planets/3
+    
+
+Com isso, temos o nosso CRUD transformado em API e podemos prosseguir para brincar com outros métodos e outros tipos de funcionalidades.
+
+
+
+# ASSOCIAÇÃO HAS ONE
+
+
+Agora vamos fazer um relacionamento hasOne (Tem um - ou um pra um), vamos criar uma nova tabela através da migration para armazenar os satélites, pois cada planeta terá 1 satélite!
+
+Utilize o comando “sequelize migration:create —name=satelites” colocando os dados que precisamos e a chave estrangeira também!
+    
+    
+    "use strict";
+    
+    module.exports = {
+      up: async (queryInterface, Sequelize) => {
+        await queryInterface.createTable("satelites", {
+          id: {
+            type: Sequelize.INTEGER,
+            autoIncrement: true,
+            allowNull: false,
+            primaryKey: true,
+          },
+          name: {
+            type: Sequelize.STRING,
+            allowNull: false,
+          },
+          serial_number: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+          },
+          planetId: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            references: { model: "planets", key: "id" },
+            onUpdate: "CASCADE",
+            onDelete: "CASCADE",
+          },
+          createdAt: {
+            type: Sequelize.DATE,
+          },
+          updatedAt: {
+            type: Sequelize.DATE,
+          },
+        });
+      },
+    
+      down: async (queryInterface, Sequelize) => {
+        await queryInterface.dropTable("satelites");
+      },
+    };
+
+    
+Vamos agora criar o model Satelite.js, dentro da pasta models!
+    
+    
+    const {DataTypes} = require("sequelize");
+    const sequelize = require("../config/sequelize");
+    
+    const Satelite = sequelize.define("satelites", {
+        name: DataTypes.STRING,
+        serial_number: DataTypes.INTEGER,
+        planetId: DataTypes.INTEGER,
+    });
+    
+    module.exports = Satelite;
+    
+
+Em seguida, vamos criar um arquivo dentro de config chamado associations.js, que terá as configurações de relacionamentos das tabelas!
+    
+    
+    const Planet = require("../models/Planet");
+    const Satelite = require("../models/Satelite");
+    
+    Planet.hasOne(Satelite, { onDelete: "CASCADE", onUpdate: "CASCADE" });
+    Satelite.belongsTo(Planet, { foreingKey: "planetId", as: "planet" });
+    
+    module.exports = { Planet, Satelite };
+    
+
+Agora, no arquivo index, vamos fazer o require global, para ter na raiz do projeto as conexões sendo chamadas.
+
+
+    const express = require("express");
+    const routes = require("./routes");
+
+    require("../config/associations");
+
+    const app = express();
+
+    app.use(express.json());
+    app.use(routes);
+
+    app.listen(3000);
+
+
+Em routes, vamos fazer a rota de criação de um satélite para um planeta específico, passando o ID dele!
+    
+    
+    routes.post("/planet/:planetId/satelites", SateliteController.store);
+    
+
+Em SateliteController, vamos criar o método store, que será responsável por armazenar os dados e vamos utilizar testando o método POST:
+    
+    
+    const Satelite = require("../../models/Satelite");
+    const Planet = require("../../models/Planet");
+    
+    module.exports = {
+      async store(req, res) {
+        const { planetId } = req.params;
+        const { name, serial_number } = req.body;
+    
+        const planet = await Planet.findByPk(planetId);
+    
+        if (!planet) {
+          res.send("Esse planeta não existe!");
+        }
+    
+        const satelite = await Satelite.create({ name, serial_number, planetId });
+    
+        return res.json(satelite);
+      },
+    };
+    
+
+Vamos testar no postman e verificar se está funcionando: - Antes de começarmos os testes, precisamos iniciar o servidor do nodemon: npx nodemon src/index.js. 
+
+- Crie uma nova pasta chamada Satelites para deixar mais organizado, em seguida, criaremos um método GET dentro dela, com a url: http://localhost:3000/planet/5/satelites. Conseguiremos ver o retorno de todos os planetas e satelites relacionados a ele.
+
+Ainda não temos nenhum, então vamos criar um método POST para cadastrar os satelites:
+
+- Crie o método post e coloque a url que definimos na rota: http://localhost:3000/planet/10/satelites e como vamos inserir dados no banco, precisamos passar os parâmetros no body, escolha a opção JSON e coloque os seguintes parâmetros:
+
+
+    {
+    "name" : "XYSZ",
+    "serial_number": 1234659846
+    }
+
+
+Vamos no arquivo routes.js, criar a rota de satelites para o index:
+    
+    
+    routes.get("/planet/:planetId/satelites", SateliteController.index);
+
+    
+Agora vamos em SateliteController fazer a criação de um método para o index.
+    
+    
+    async index(req,res) {
+            const {planetId} = await req.params;
+    
+            if(!planetId){
+                res.send("Esse Planeta não existe!");
+            }
+    
+            const planet = await Planet.findByPk(planetId, {
+                include: Satelite,
+            });
+    
+            return res.json(planet);
+    
+        },
+    
+
+Agora vamos testar no postman, utilizando o método GET:
+
+- Vamos rodar nossa url: http://localhost:3000/planet/5/satelites. Conseguiremos ver o retorno de todos os planetas e satelites relacionados a ele, vamos buscar por planetas e se ele não existir, vai aparecer uma mensagem de alerta.
+- Para inserir um satélite, vamos criar um método POST e inserir no body, o seguinte Json:
+
+
+    {
+        "name" : "XYSZ",
+        "serial_number": 1234659846
+
+    }
+
+
+- Se quisermos ver apenas o satelite, vamos acrescentar no return, a informação:
+
+
+return res.json(planet.satelite);
+
+
+Agora já temos um hasOne funcionando na nossa API
